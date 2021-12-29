@@ -1,0 +1,609 @@
+[
+  {
+    "templates" : [
+      {
+        "name": "template",
+        "description" : "base template definition for preload schema",
+        "template" : {
+          "name" : "xxx",
+          "description" : "xxx",
+          "template": {}
+        }
+      },
+      {
+        "name": "queryDef",
+        "description" : "base template definition for preload schema",
+        "template" : {
+          "name": "xxx",
+          "description": "xxx",
+          "template": {
+            "_id": "xxx",
+            "name": "xxx",
+            "description": "xxx",
+            "version": "0.1.1",
+            "tags": [
+              "template"
+            ],
+            "connection": "queryDefs",
+            "fields": [
+              {
+                "name": "xxx",
+                "dbNAme": "xxx",
+                "type": "boolean",
+                "description": "blah",
+                "validation": "xx",
+                "inputType": ""
+              }
+            ],
+            "baseQuery": "select xxx from something",
+            "abilities": {
+              "get": true,
+              "insert": true,
+              "delete": true,
+              "update": true
+            },
+            "roles": [
+              "user"
+            ],
+            "properties": {
+              "createdBy": "Scott",
+              "createdDate": "12.23.21",
+              "jiraTicket": "xxx-1234",
+              "Modifications": [
+                {
+                  "when": "12.23.21",
+                  "who": "Scott",
+                  "jiraTicket": "xxx-1235",
+                  "description": "i created this"
+                }
+              ]
+            }
+          }}
+      },
+      {
+        "name": "connection",
+        "description": "describes connections to data engines",
+        "template": {
+          "name": "xxx",
+          "description": "xxx",
+          "engineType": "xxx",
+          "connectionString": "xxx",
+          "collectionName": "xxx",
+          "schema" : {},
+          "uniquekeys": []
+          }
+      },
+      {
+        "name": "FieldItem",
+        "description": "describes field elements",
+        "template": {
+          "name": "xxx",
+          "dbNAme": "xxx",
+          "type": "xxx",
+          "description": "xxx",
+          "validation": "xxx",
+          "inputType": "xxx",
+          "arrayDef": [],
+          "options": [],
+          "autoassigned": false,
+          "templateName": "xxx"
+        },
+        "schema": ""
+      },
+      {
+        "name": "FieldItem",
+        "description": "describes field elements",
+        "template": {
+          "get": true,
+          "insert": true,
+          "delete": true,
+          "update": true
+        },
+        "schema": ""
+      },
+      {
+        "name": "DisplaySet",
+        "description": "describes display field sets",
+        "template": {
+          "name": "xxx",
+          "items": ["xxx"]
+        },
+        "schema": ""
+      },
+      {
+        "name": "modifications",
+        "description": "describes modification data for something",
+        "template": {
+          "when": "12/27/21",
+          "who": "Scott",
+          "jiraTicket": "none",
+          "description": "i created this"
+        },
+        "schema": ""
+      }
+    ]
+  },
+  {
+    "queryDefs" : [
+      {
+        "name": "GetTemplate",
+        "description": "Gets a list of templates",
+        "version": "0.1.1",
+        "tags": [
+          "template",
+          "queryDef"
+        ],
+        "connection": "templates",
+        "fields": [
+          {
+            "name": "name",
+            "dbNAme": "name",
+            "type": "string",
+            "description": "specific name of template",
+            "validation": "none",
+            "inputType": "text"
+          },
+          {
+            "name": "description",
+            "dbNAme": "description",
+            "type": "string",
+            "description": "description of the schema",
+            "validation": "none",
+            "inputType": "text"
+          },
+          {
+            "name": "template",
+            "dbNAme": "template",
+            "type": "string",
+            "description": "template definition",
+            "validation": "JSON",
+            "inputType": "JsonInput"
+          },
+          {
+            "name": "id",
+            "dbNAme": "_id",
+            "type": "string",
+            "description": "template id assigned by system",
+            "validation": "none",
+            "inputType": "text",
+            "autoassigned": true
+          }
+        ],
+        "baseQuery": "{}",
+        "abilities": {
+          "get": true,
+          "insert": true,
+          "delete": true,
+          "update": true
+        },
+        "roles": [
+          "queryDefAdmin"
+        ],
+        "Modifications": [
+          {
+            "when": "12/27/21",
+            "who": "Scott",
+            "jiraTicket": "none",
+            "description": "i created this"
+          }
+        ]
+      },
+      {
+        "name": "getConnection",
+        "description": "Gets a list of templates",
+        "version": "0.1.1",
+        "tags": [
+          "connection", "queryDef"
+        ],
+        "connection": "connections",
+        "fields": [
+          {
+            "name": "name",
+            "dbNAme": "name",
+            "type": "string",
+            "description": "specific name of connection",
+            "validation": "none",
+            "inputType": "text"
+          },
+          {
+            "name": "description",
+            "dbNAme": "description",
+            "type": "string",
+            "description": "description of the connection",
+            "validation": "none",
+            "inputType": "text"
+          },
+          {
+            "name": "EngineType",
+            "dbNAme": "engineType",
+            "type": "string",
+            "description": "describes engine we are connecting to.  i.e. SQLServer, Mongo, WebAPI",
+            "validation": "none",
+            "options" : ["SQLServer", "Mongo", "WebAPI"],
+            "inputType": "select"
+          },
+          {
+            "name": "ConnectionString",
+            "dbNAme": "connectionString",
+            "type": "string",
+            "description": "uri to access engine",
+            "validation": "string",
+            "inputType": "text"
+          },
+          {
+            "name": "collectionName",
+            "dbNAme": "collectionName",
+            "type": "string",
+            "description": "name of target database or collection",
+            "validation": "string",
+            "inputType": "text"
+          },
+          {
+            "name": "id",
+            "dbNAme": "_id",
+            "type": "string",
+            "description": "template id assigned by system",
+            "validation": "none",
+            "inputType": "text",
+            "autoassigned" : true
+          }
+        ],
+        "baseQuery": "{}",
+        "abilities": {
+          "get": true,
+          "insert": true,
+          "delete": true,
+          "update": true
+        },
+        "roles": [
+          "queryDefAdmin"
+        ],
+        "Modifications": [
+          {
+            "when": "12/27/21",
+            "who": "Scott",
+            "jiraTicket": "none",
+            "description": "i created this"
+          }
+        ]
+      },
+      {
+        "name": "getQueryDef",
+        "description": "Gets query definition details",
+        "version": "0.1.1",
+        "tags": [
+          "queryDef"
+        ],
+        "connection": "querydefs",
+        "fields": [
+          {
+            "name": "name",
+            "dbNAme": "name",
+            "type": "string",
+            "description": "specific name of queryDef",
+            "validation": "none",
+            "inputType": "text"
+          },
+          {
+            "name": "description",
+            "dbNAme": "description",
+            "type": "string",
+            "description": "description of the query",
+            "validation": "none",
+            "inputType": "text"
+          },
+          {
+            "name": "version",
+            "dbNAme": "version",
+            "type": "string",
+            "description": "describes the version of this entry",
+            "validation": "version",
+            "inputType": "versionText"
+          },
+          {
+            "name": "tags",
+            "dbNAme": "tags",
+            "type": "array",
+            "description": "tags associated with this definition",
+            "validation": "none",
+            "inputType": "tagsText"
+          },
+          {
+            "name": "connection",
+            "dbNAme": "connectionName",
+            "type": "string",
+            "description": "name of queryDef Connection",
+            "validation": "string",
+            "inputType": "text"
+          },
+          {
+            "name": "fields",
+            "dbNAme": "fields",
+            "type": "array",
+            "description": "fields associated with this table",
+            "validation": "none",
+            "inputType": "fieldList",
+            "templateName" : "FieldItem",
+            "arrayDef" : [
+              {
+                "name": "Name",
+                "dbNAme": "name",
+                "type": "string",
+                "description": "name of field presented to user",
+                "validation": "nameField",
+                "inputType": "text"
+              },
+              {
+                "name": "dbName",
+                "dbNAme": "connectionName",
+                "type": "string",
+                "description": "name field in query",
+                "validation": "string",
+                "inputType": "text"
+              },
+              {
+                "name": "Type",
+                "dbNAme": "type",
+                "type": "string",
+                "description": "Data Type for Field",
+                "validation": "none",
+                "inputType": "select",
+                "options" : [
+                  "string",
+                  "boolean",
+                  "date",
+                  "number",
+                  "array",
+                  "object",
+                  "json",
+                  "float"
+                ]
+              },
+              {
+                "name": "description",
+                "dbNAme": "description",
+                "type": "string",
+                "description": "description of field",
+                "validation": "string",
+                "inputType": "text"
+              },
+              {
+                "name": "validation",
+                "dbNAme": "validation",
+                "type": "string",
+                "description": "validation requirements",
+                "validation": "string",
+                "inputType": "text"
+              },
+              {
+                "name": "inputType",
+                "dbNAme": "Input Type",
+                "type": "string",
+                "description": "Type of control used to render field",
+                "validation": "none",
+                "inputType": "select",
+                "options" : [
+                  "text",
+                  "boolean",
+                  "date",
+                  "number",
+                  "textBox",
+                  "JSONText",
+                  "versionText",
+                  "float",
+                  "TagsText",
+                  "FieldList",
+                  "new",
+                  "Geospatial",
+                  "textArray"
+                ]
+              },
+              {
+                "name": "options",
+                "dbNAme": "options",
+                "type": "array",
+                "description": "list of text options for select",
+                "validation": "none",
+                "inputType": "textArray"
+              },
+              {
+                "name": "arrayDef",
+                "dbNAme": "arrayDef",
+                "type": "array",
+                "description": "list field entry sub elements",
+                "validation": "none",
+                "inputType": "fieldList"
+              }
+            ]
+          },
+
+          {
+            "name": "id",
+            "dbNAme": "_id",
+            "type": "string",
+            "description": "template id assigned by system",
+            "validation": "none",
+            "inputType": "text",
+            "autoassigned" : true
+          },
+          {
+            "name": "DisplaySets",
+            "dbNAme": "displaySets",
+            "type": "array",
+            "description": "",
+            "validation": "none",
+            "inputType": "text",
+            "templateName" : "DisplaySets"
+          },
+          {
+            "name": "baseQuery",
+            "dbNAme": "baseQuery",
+            "type": "string",
+            "description": "name of base engine query",
+            "validation": "string",
+            "inputType": "text"
+          },
+          {
+            "name": "abilities",
+            "dbNAme": "abilities",
+            "type": "object",
+            "description": "list of basic query abilities",
+            "templateName": "Abilities",
+            "inputType": "JSONText"
+          },
+          {
+            "name": "roles",
+            "dbNAme": "roles",
+            "type": "array",
+            "description": "list of roles that can access query",
+            "validation": "none",
+            "inputType": "textArray"
+          },
+          {
+            "name": "abilities",
+            "dbNAme": "abilities",
+            "type": "object",
+            "description": "list of basic query abilities",
+            "templateName": "Abilities",
+            "inputType": "JSONText"
+          }
+
+        ],
+        "displaySets": [
+          { "name" : "UserFields",
+            "items" : [ "_id","name","description", "Type"]
+          },
+          { "name": "UIFields",
+            "items": [
+              "name",
+              "type",
+              "description",
+              "validation",
+              "inputType",
+              "options"
+            ]
+          }
+
+        ],
+        "baseQuery": "{}",
+        "abilities": {
+          "get": true,
+          "insert": true,
+          "delete": true,
+          "update": true
+        },
+        "roles": [
+          "queryDefAdmin"
+        ],
+        "Modifications": [
+          {
+            "when": "12/27/21",
+            "who": "Scott",
+            "jiraTicket": "none",
+            "description": "i created this"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "connection" : [
+      {
+        "name": "querydefs",
+        "description": "connection info for querydefs",
+        "engineType": "mongo",
+        "connectionString": "mongodb://localhost:27017/",
+        "dbName" : "querydefs",
+        "collectionName": "querydefs",
+        "uniqueKeys" : ["name"],
+        "schema" : {
+          "name": {
+            "type": "String", "unique" : true
+          },
+          "description": {
+            "type": "String"
+          },
+          "version": {
+            "type": "Date"
+          },
+          "tags": {
+            "type": [
+              "String"
+            ]
+          },
+          "connection": {
+            "type": "String"
+          },
+          "fields": {
+            "type": [
+              "Mixed"
+            ]
+          },
+          "baseQuery": {
+            "type": "String"
+          },
+          "abilities": {
+            "get": {
+              "type": "Boolean"
+            },
+            "insert": {
+              "type": "Boolean"
+            },
+            "delete": {
+              "type": "Boolean"
+            },
+            "update": {
+              "type": "Boolean"
+            }
+          },
+          "roles": {
+            "type": [
+              "String"
+            ]
+          },
+          "Modifications": {
+            "type": [
+              "Mixed"
+            ]
+          }
+        }
+      },
+      {
+        "name": "connections",
+        "description": "connection info for connections",
+        "engineType": "mongo",
+        "connectionString": "mongodb://localhost:27017/",
+        "dbName" : "querydefs",
+        "collectionName": "connections",
+        "schema" :{
+          "name": {
+            "type": "String", "unique" : true
+          },
+          "description": {
+            "type": "String"
+          },
+          "template": {}
+        },
+        "uniqueKeys" : [ "name" ]
+      },
+      {
+        "name": "templates",
+        "description": "connection info for templates",
+        "engineType": "mongo",
+        "connectionString": "mongodb://localhost:27017/",
+        "dbName" : "querydefs",
+        "collectionName": "templates",
+        "uniqueKeys" : ["name"],
+        "schema" : {
+          "name": {
+            "type": "String", "unique" : true
+          },
+          "description": {
+            "type": "String"
+          },
+          "template": {}
+        }
+      }
+    ]
+  }
+]

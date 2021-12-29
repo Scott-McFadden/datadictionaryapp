@@ -1,0 +1,9 @@
+{
+  "verbose": true,
+  "ignore": [
+    "*.text.js",
+    "fixtures/*" ,
+    "docs/*"
+  ]
+
+}

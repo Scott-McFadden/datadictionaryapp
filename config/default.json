@@ -1,0 +1,12 @@
+{
+  "app": {
+    "hostUrl" : "localhost",
+    "port": 3000,
+    "logname" : "access.log",
+    "debug" : true
+
+  },
+  "qdefDB" : {
+    "connection" : "mongodb://localhost/test"
+  }
+}
