@@ -34,6 +34,7 @@ class mongoCollection {
     constructor(props) {
         // super(props);
         this.hydrate(props);
+        this.createModel();
     }
 
     /**
@@ -41,12 +42,12 @@ class mongoCollection {
      * @param props  connection object.
      */
     hydrate(props) {
-        if (props == undefined)
+        if (props === undefined)
             throw "mongoCollection.hydrate  props undefined";
 
-        if (Boolean(props.collectionName) ||
-            Boolean(props.dbName) ||
-            Boolean(props.connectionString))
+        if (!Boolean(props.collectionName) ||
+            !Boolean(props.dbName) ||
+            !Boolean(props.connectionString))
             throw "mongoCollection.hydrate  props incomplete";
 
         this.name = props.name ?? "";
@@ -58,7 +59,7 @@ class mongoCollection {
         this.connectionString = props.connectionString;
         if (!this.connectionString.endsWith("/"))
             this.connectionString += "/";
-        this.uniqueKeys = props.uniqueKeys;
+        this.uniqueKeys = props.uniqueKeys ?? [];
     }
 
     /*
@@ -74,10 +75,13 @@ class mongoCollection {
     curModel = null;
     mongooseSchema = null;
     connectionString = "";
-    static connection = null;
+    connection = null;
     lastId;
     modelReady = () => {
-        return mongoose.modelNames().includes(this.collectionName);
+        if (this.connection.models[this.collectionName] === undefined)
+            return false;
+
+        return this.connection.models[this.collectionName].modelName === this.collectionName;
     }
     uniqueKeys = [];
     uniqueKeyJson = {};
@@ -88,19 +92,11 @@ class mongoCollection {
      */
     async createModel() {
 
-        // if (this.connectionString.length < 10)
-        // {
-        //     let er2 = "mongoCollection.createModel  connection string is too short";
-        //     log.error(er2);
-        //
-        //     throw er2;
-        //
-        // }
-
         try {
-            if (mongoCollection.connection == null) {
-                mongoCollection.connection = await mongoose.connect(this.connectionString + this.dbName);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            if (this.connection == null) {
+                this.connection = await mongoose.createConnection(this.connectionString + this.dbName,
+                    {family: 4, maxPoolSize: 10});
+                // await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
         } catch (er) {
@@ -123,7 +119,7 @@ class mongoCollection {
         }
         try {
             if (!this.modelReady())   // create the model if it does not exist
-                this.curModel = mongoose.model(this.collectionName, this.mongooseSchema);
+                this.curModel = this.connection.model(this.collectionName, this.mongooseSchema);
         } catch (er) {
             let er2 = "mongoCollection.createModel could not create model";
             log.error(er2);
@@ -149,7 +145,7 @@ class mongoCollection {
             throw "mongoCollection.addOne props is undefined";
         }
         if (!this.modelReady()) {
-            throw "mongoCollection.addOne model not ready"
+            await this.createModel();
         }
         try {
             if (typeof props === 'string') {   // create json is not already json
@@ -165,21 +161,22 @@ class mongoCollection {
             log.info(er);
             throw er2;
         }
-        ;
 
-        let scratch = "";
-        let comma = "";
-        for (let a = 0; a < this.uniqueKeys.length; a++) {
-            scratch += comma + "\"" + this.uniqueKeys[a] + "\" : \"" + p[this.uniqueKeys[a]] + "\"";
-            comma = ",";
-        }
-        this.uniqueKeyJson = JSON.parse("{" + scratch + "}");
-        log.info(this.uniqueKeyJson);
-        if (await this.curModel.exists(this.uniqueKeyJson)) {
-            let er2 = "mongoCollection.addOne document already exists";
-            log.error(er2);
+        if (this.uniqueKeys.length > 0) {
+            let scratch = "";
+            let comma = "";
+            for (let a = 0; a < this.uniqueKeys.length; a++) {
+                scratch += comma + "\"" + this.uniqueKeys[a] + "\" : \"" + p[this.uniqueKeys[a]] + "\"";
+                comma = ",";
+            }
+            this.uniqueKeyJson = JSON.parse("{" + scratch + "}");
+            //log.info(this.uniqueKeyJson);
+            if (await this.curModel.exists(this.uniqueKeyJson)) {
+                let er2 = "mongoCollection.addOne document already exists";
+                log.error(er2);
 
-            throw er2;
+                throw er2;
+            }
         }
         try {
 
@@ -190,9 +187,11 @@ class mongoCollection {
             log.info(er);
             throw er2;
         }
-        ;
 
-        log.info(`mongoCollection.addOne ${this.name} item saved`);
+        if (p[this.uniqueKeys[0]] !== undefined)
+            log.info(`mongoCollection.addOne ${this.collectionName}  has document ${savedItem[this.uniqueKeys[0]]}`);
+        else
+            log.info(`mongoCollection.addOne ${this.collectionName} has document ${savedItem._id}`);
         this.lastId = savedItem._id;
         return savedItem;
 

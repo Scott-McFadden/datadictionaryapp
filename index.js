@@ -2,7 +2,6 @@
  * requires
  */
 
-const mongoose = require('mongoose');
 const express = require("express");
 const morgan = require('morgan');
 const fs = require("fs");
@@ -10,9 +9,8 @@ const path = require("path");
 const config = require("config");
 const asyncHandler = require('express-async-handler')
 const log = require("cslog");
-const events = require('events');
 const mongoCollection = require("./data/mongoCollection");
-
+const sqlServerCollection = require("./data/sqlServerConnection");
 
 /**
  * Load Config Files
@@ -26,9 +24,12 @@ const qdefConfig = config.get('qdefDB');
 
 const app=   express();
 const port = appConfig.port;
-const eventEmitter = new events.EventEmitter();
 
+const connectionDef = [];
 
+let pconnections;   // connection configuration details
+let ptemplates;     // template details
+let pquerydefs;     // predefined query definitions
 
 
 /**
@@ -81,37 +82,46 @@ app.get("/preload", asyncHandler(async ( req, res) => {
 
 
     let ret = "Preloading Mongo Tables";
+    log.info(ret);
 
-    let rawData = fs.readFileSync("./data/preLoadData.json");
-    let preLoadData = JSON.parse(rawData);
+    // load templates
 
-    let pconnections = preLoadData[2].connection;
-    let ptemplates = preLoadData[0];
-    let pquerydefs = preLoadData[1];
-    console.log(pconnections);
-
-    let uniqueCollections = [];
-    for (let con=0; con<pconnections.length; con++)
-    {
-        log.info("looking for " );
-        log.info(pconnections[con].name);
-        if ( !uniqueCollections.find( a => a.collectionName  == pconnections[con].collectionName && a.connectionString == pconnections[con].connectionString))
-        {
-            uniqueCollections.push({ "connectionString": pconnections[con].connectionString, "collection" : pconnections[con].collectionName });
+    for(let a = 0; a< ptemplates.length; a++)
+        try {
+            await getConnection('templates').addOne(ptemplates[a]);
         }
-    }
+         catch (er)
+         {
+             log.info(ptemplates[a].name + " > "+ er);
+         }
 
-    let mc = new mongoCollection(pconnections[0]);
-    await mc.createModel();
-    await mc.addOne(pconnections[0]);
-    await mc.getOne({"_id" : mc.lastId});
+    for(let a=0; a< pconnections.length; a++)
+        try {
+            await getConnection('connections').addOne(pconnections[a]);
+        }
+        catch (er)
+        {
+            log.info(pconnections[a].name + " > "+ er);
+        }
+    for(let a=0; a< pquerydefs.length; a++)
+        try {
+            await getConnection('querydefs').addOne(pquerydefs[a]);
+        }
+        catch (er)
+        {
+            log.info(pquerydefs[a].name + " > "+ er);
+        }
 
+  //  await mc.addOne(pconnections[0]);
+  //  await mc.getOne({"_id" : mc.lastId});
 
-
-
-
-   res.send("preload");
+   res.send("preload completed.  " );
 }))
+
+getConnection = (name) => {
+    return connectionDef.find( a=> a.collectionName === name);
+}
+
 
 app.get("/resetDatabase", asyncHandler(async ( req, res) => {
  //   let rawData = fs.readFileSync ("./data/preLoadData.json");
@@ -139,5 +149,33 @@ app.get("/resetDatabase", asyncHandler(async ( req, res) => {
 app.listen(port, ()=> {
     console.log(`app started at http://${appConfig.hostUrl}:${port}   ${new Date().toLocaleTimeString()}`);
 
+    let rawData = fs.readFileSync("./data/preLoadData.json");
+    let preLoadData = JSON.parse(rawData);
+
+    pconnections = preLoadData[2].connection;
+    ptemplates = preLoadData[0].templates;
+    pquerydefs = preLoadData[1].queryDefs;
+
+    for (let a=0; a< pconnections.length; a++)
+    {
+        if(pconnections[a].engineType === "mongo")
+        {
+            try {
+                log.info(pconnections[a]);
+                connectionDef.push( new mongoCollection(pconnections[a]));
+            }
+            catch(er)
+            {
+                log.error(pconnections[a].name + " > " + er.toString());
+            }
+
+        }  else  if(pconnections[a].engineType === "sqlServer"){
+            connectionDef.push(new sqlServerCollection(pconnections[a]));
+        } else
+        {
+            log.error(`engine (${pconnections[a].engineType}) has not been configured `);
+            throw `engine (${pconnections[a].engineType}) has not been configured `;
+        }
+    }
 
 });
