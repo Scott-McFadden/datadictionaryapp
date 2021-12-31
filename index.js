@@ -12,6 +12,8 @@ const log = require("cslog");
 const mongoCollection = require("./data/mongoCollection");
 const sqlServerCollection = require("./data/sqlServerConnection");
 
+const Exception = require("./data/exception");
+
 /**
  * Load Config Files
  */
@@ -92,7 +94,7 @@ app.get("/preload", asyncHandler(async ( req, res) => {
         }
          catch (er)
          {
-             log.info(ptemplates[a].name + " > "+ er);
+             er.consoleLog();
          }
 
     for(let a=0; a< pconnections.length; a++)
@@ -101,7 +103,7 @@ app.get("/preload", asyncHandler(async ( req, res) => {
         }
         catch (er)
         {
-            log.info(pconnections[a].name + " > "+ er);
+            er.consoleLog();
         }
     for(let a=0; a< pquerydefs.length; a++)
         try {
@@ -109,7 +111,7 @@ app.get("/preload", asyncHandler(async ( req, res) => {
         }
         catch (er)
         {
-            log.info(pquerydefs[a].name + " > "+ er);
+            er.consoleLog();
         }
 
   //  await mc.addOne(pconnections[0]);
@@ -161,7 +163,7 @@ app.listen(port, ()=> {
         if(pconnections[a].engineType === "mongo")
         {
             try {
-                log.info(pconnections[a]);
+                // log.info(pconnections[a]);
                 connectionDef.push( new mongoCollection(pconnections[a]));
             }
             catch(er)

@@ -577,12 +577,30 @@
         "collectionName": "connections",
         "schema" :{
           "name": {
-            "type": "String", "unique" : true
+            "type": "String",
+            "unique": true
           },
           "description": {
             "type": "String"
           },
-          "template": {}
+          "engineType": {
+            "type": "String"
+          },
+          "connectionString": {
+            "type": "String"
+          },
+          "dbName": {
+            "type": "String"
+          },
+          "collectionName": {
+            "type": "String"
+          },
+          "schema": {},
+          "uniqueKeys": [
+            {
+              "type": "String"
+            }
+          ]
         },
         "uniqueKeys" : [ "name" ]
       },
