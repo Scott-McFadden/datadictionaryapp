@@ -7,11 +7,12 @@
 
  */
 
-const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const mongo = require("mongodb");
+
 const log = require("cslog");
 const Exception = require("./exception");
 const Utils = require("../utils");
+
 /*
 
 Used to create a class
@@ -71,68 +72,51 @@ class mongoCollection {
          Properties
      */
 
-    name = "";
+    collection = null;
+    collectionName = "";
+    connection = null;
+    connectionString = "";
+    database = null;
+    dbName = "";
     description = "";
     engineType = "";
-    dbName = "";
-    collectionName = "";
-    schema = "";
-    curModel = null;
-    mongooseSchema = null;
-    connectionString = "";
-    connection = null;
     lastId;
     modelReady = false;
-    uniqueKeys = [];
+    name = "";
+    schema = "";
     uniqueKeyJson = {};
+    uniqueKeys = [];
 
     /**
      * sets up mongoose model
      * @returns {Promise<void>}
      */
     async createModel() {
+        if (this.connection && this.connection.closed === true)
+            this.modelReady = false;
+
         if (this.modelReady) return;
 
         try {
             if (this.connection == null) {
-                this.connection = await mongoose.createConnection(this.connectionString + this.dbName,
-                    {family: 4, maxPoolSize: 10});
+                this.connection = new mongo.MongoClient(this.connectionString);
 
-            }
-
-        } catch (er) {
-            let er2 = "mongoCollection.createModel can not connect";
-            log.error(er2);
-            log.info(er);
-            throw er2;
-
-        }
-
-        try {
-            this.mongooseSchema = new Schema(this.schema);
-
-        } catch (er) {
-            let er2 = "mongoCollection.createModel bad Schema definition";
-            log.error(er2);
-            log.info(er);
-            throw er2;
-
-        }
-        try {
-            if (!this.modelReady) {  // create the model if it does not exist
-                this.curModel = this.connection.model(this.collectionName, this.mongooseSchema);
+                await this.connection.connect();
+                this.database = this.connection.db(this.dbName);
+                this.collection = this.database.collection(this.collectionName);
                 this.modelReady = true;
             }
+
         } catch (er) {
-            let er2 = "mongoCollection.createModel could not create model";
-            log.error(er2);
-            log.info(er);
-            throw er2;
+            throw new Exception(
+                "mongoCollection.createModel can not connect",
+                {
+                    connectionString: this.connectionString,
+                    "database": this.database,
+                    collectionName: this.collectionName
+                },
+                er);
         }
-        if (this.modelReady)
-            log.info(`${this.name} model ready`);
-
-
     }
 
     /**
@@ -143,23 +127,12 @@ class mongoCollection {
      */
     async addOne(props) {
         let p = {};
-        let savedItem;
         let item;
-        if (props == undefined) {
+        if (props === undefined) {
             throw "mongoCollection.addOne props is undefined";
         }
         if (!this.modelReady) {
             await this.createModel();
-        }
-        try {
-
-            p = this.getJson(props);
-
-            item = new this.curModel(p);
-        } catch (er) {
-            throw new Exception("mongoCollection.addOne", "could not create new document",
-                {"collectionName": this.collectionName, "props": p}, er);
-
         }
 
         if (this.uniqueKeys.length > 0) {
@@ -170,28 +143,28 @@ class mongoCollection {
                 comma = ",";
             }
             this.uniqueKeyJson = JSON.parse("{" + scratch + "}");
-            //log.info(this.uniqueKeyJson);
-            if (await this.curModel.exists(this.uniqueKeyJson)) {
+
+            if (await this.collection.findOne(this.uniqueKeyJson)) {
                 throw new Exception("mongoCollection.addOne", "item already exists in " + this.collectionName, JSON.stringify(this.uniqueKeyJson), null, null)
             }
         }
+
         try {
-
-            savedItem = await item.save();
+            p = Utils.getJson(props);
+            item = await this.collection.insertOne(p);
         } catch (er) {
-            throw new Exception("mongoCollection.addOne",
-                "mongoCollection.addOne save failed for " + this.collectionName,
-                JSON.stringify(p), er, null);
-
+            throw new Exception("mongoCollection.addOne", "could not create new document",
+                {"collectionName": this.collectionName, "props": p}, er);
 
         }
 
+
         if (p[this.uniqueKeys[0]] !== undefined)
-            log.info(`mongoCollection.addOne ${this.collectionName}  created document ${savedItem[this.uniqueKeys[0]]}`);
+            log.info(`mongoCollection.addOne ${this.collectionName}  created document ${item[this.uniqueKeys[0]]}`);
         else
-            log.info(`mongoCollection.addOne ${this.collectionName} created document ${savedItem._id}`);
-        this.lastId = savedItem._id;
-        return savedItem;
+            log.info(`mongoCollection.addOne ${this.collectionName} created document ${item._id}`);
+        this.lastId = item._id;
+        return item;
 
     }
 
@@ -204,26 +177,21 @@ class mongoCollection {
      */
     async getOne(props) {
         let p = {};
-        let dataModel;
-        if (!this.modelReady) {
-            throw new Exception("mongoCollection.getOne",
-                "model not ready ", null, null, null);
-        }
-        if (props == undefined) {
+        let ret;
+
+        if (props === undefined) {
             throw new Exception("mongoCollection.getOne",
                 "props undefined", null, null, null);
         }
         try {
-            if (typeof props === 'string') {   // create json is not already json
-                p = JSON.parse(props);
-            }
-            dataModel = this.curModel.findOne(props);
+            p = Utils.getJson(props);
+            ret = this.collection.findOne(p);
         } catch (er) {
             throw new Exception("mongoCollection.getOne",
                 "get failed", {"collectionName": this.collectionName}, er);
         }
 
-        return dataModel;
+        return ret;
     }
 
     /**
@@ -233,20 +201,14 @@ class mongoCollection {
      * @returns {Promise<void>}
      */
     async getById(id) {
-        let ret;
-        if (!this.modelReady) {
-            throw new Exception("mongoCollection.getById",
-                "model not ready ", null, null, null);
-        }
         if (id) {
             try {
-                ret = await this.curModel.findById(id);
+                return await this.collection.findById(id);
             } catch (er) {
 
                 throw new Exception("mongoCollection.getById",
                     "get failed", {"collectionName": this.collectionName, "targetId": id}, er);
             }
-
         } else
             throw new Exception("mongoCollection.getById",
                 "no id provided", {"collectionName": this.collectionName}, null);
@@ -262,46 +224,32 @@ class mongoCollection {
         /*
           this expects props to be a properly formatted mongo query
          */
-        if (!this.modelReady) {
-            throw new Exception("mongoCollection.getMany",
-                "model not ready ", null, null, null);
-        }
 
-        let ret;
-        let q = {};
+        let p = {};
 
         if (props) {
-            q = this.getJson(props);
+            p = Utils.getJson(props);
         }
 
         try {
-            ret = await this.curModel.find(q).then((d) => {
-                console.log(Utils.time(), "data", d)
-            });
+            return await this.collection.find(p).toArray();
         } catch (er) {
             throw new Exception("mongoCollection.getById",
                 "get failed", {"collectionName": this.collectionName, "targetQuery": q}, er);
-            11241124
         }
-
-        return ret;
     }
 
     /**
      * deleteById - find the document by the provided id and removes it from the database.
      *              it will return back a copy of the deleted data.
      * @param id
-     * @returns {Promise<awaited Query<T extends Document ? Require_id<T> : (Document<any, any, T> & Require_id<T> & TVirtuals & TMethods) | null, T extends Document ? Require_id<T> : (Document<any, any, T> & Require_id<T> & TVirtuals & TMethods), TQueryHelpers, T> & TQueryHelpers>}
+     * @returns
      */
     async deleteById(id) {
-        if (!this.modelReady) {
-            throw new Exception("mongoCollection.deleteById",
-                "model not ready ", null, null, null);
-        }
-        let ret;
+        let ret = null;
         if (id) {
             try {
-                ret = await this.curModel.findByIdAndRemove(id);
+                ret = await this.collection.findByIdAndRemove(id);
             } catch (er) {
                 throw new Exception("mongoCollection.deleteById",
                     "operation failed", {"collectionName": this.collectionName, "id": id}, er);
@@ -311,12 +259,8 @@ class mongoCollection {
         } else
             throw new Exception("mongoCollection.deleteById",
                 "no id provided", {"collectionName": this.collectionName});
-
-
         log.success(`{ "action" : "mongoCollection.deleteById ", "collection": "${this.collectionName}" , "_id" : "${ret._id.toString()}" }`);
-
         return ret;
-
     }
 
     /**
@@ -328,13 +272,10 @@ class mongoCollection {
      */
     async findAndReplace(doc) {
         let ret;
-        if (!this.modelReady) {
-            throw new Exception("mongoCollection.findAndReplace",
-                "model not ready ", null, null, null);
-        }
+
         if (doc) {
             try {
-                ret = await this.curModel.findOneAndReplace({_id: doc._id}, doc, {
+                ret = await this.collection.findOneAndReplace({_id: doc._id}, doc, {
                     upsert: true,
                     returnNewDocument: true
                 });
@@ -346,18 +287,12 @@ class mongoCollection {
             throw new Exception("mongoCollection.findAndReplace",
                 "no doc provided ", {"collectionName": this.collectionName});
 
-
         log.success(`{ "action" : "mongoCollection.findAndReplace ", "collection": "${this.collectionName}" , "_id" : "${ret._id.toString()}" }`);
 
         return ret;
     }
 
-    getJson(data) {
-        if (typeof data === "String")
-            return JSON.stringify(data);
-        else
-            return data;
-    }
+
 }
 
 module.exports = mongoCollection;

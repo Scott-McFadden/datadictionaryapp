@@ -7,6 +7,6 @@
 
   },
   "qdefDB" : {
-    "connection" : "mongodb://localhost/test"
+    "connection": "mongodb://localhost/querydefs"
   }
 }
