@@ -1,0 +1,41 @@
+---
+swagger: "2.0"
+info:
+  description: "This is the QueryDefs Server.  You can find out more about this project at..."
+  version: "1.0.0"
+  title: "QueryDef Server"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "localhost:3000"
+basePath: "/v1"
+tags:
+  - name: 'collections'
+    description: 'all the data collections available for the queries'
+  - name: 'queryDefs'
+    description: 'all of the available queryDefs that can be used'
+  - name: "templates"
+    description: "all of the available templates to build your json bodies from"
+schemes:
+  - 'http'
+paths:
+  /connection:
+    get:
+      tags:
+        - collection
+      summary: "gets a list of all of the collection targets available"
+      description: ""
+      operationId: "getCollections"
+      produces:
+        - "application/json"
+      parameters: [ ]
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            type: "object"
+            additionalProperties:
+              type: "integer"
+              format: "int32"
+      x-swagger-router-controller: "queryDefs"
+
